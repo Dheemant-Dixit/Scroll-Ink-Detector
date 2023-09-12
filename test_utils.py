@@ -15,9 +15,6 @@ xp = cp
 
 IS_DEBUG = False
 mode = 'train' if IS_DEBUG else 'test'
-# top_TH = 0.5
-# bot_TH = 0.4
-# min_ar = 200
 TH=0.5
 
 # ref.: https://www.kaggle.com/stainsby/fast-tested-rle
@@ -161,7 +158,6 @@ def denoise_image(input_image, iter_num=100, fidelity=150, sparsity_scale=10, co
 def read_image(fragment_id):
     images = []
 
-    # idxs = range(65)
     mid = 30 # 65 // 2 , 28, 30
     start = mid - CFG.in_chans // 2
     end = mid + CFG.in_chans // 2
@@ -191,7 +187,6 @@ def get_transforms(data, cfg):
     elif data == 'valid':
         aug = A.Compose(cfg.valid_aug_list)
 
-    # print(aug)
     return aug
 
 class CustomDataset(Dataset):
@@ -292,8 +287,6 @@ class EnsembleModel:
         self.use_tta = use_tta
 
     def __call__(self, x):
-#         outputs = [torch.sigmoid(model(x)).to('cpu').numpy()
-#                    for model in self.models]
         outputs=[]
         THR = 0.3
         for model in self.models:
@@ -302,32 +295,20 @@ class EnsembleModel:
             elif type(model.encoder.encoder) == MixVisionTransformerEncoder:
                 count=1
                 x_ = torch.sigmoid(model(x[:, 0:3, :, :]))
-#                 outputs.append(torch.sigmoid(model(x[:, 0:3, :, :])).to('cpu').numpy())
                 for i in range(4, CFG.in_chans):
                     x_ += torch.sigmoid(model(x[:, i-3:i, :, :]))
-#                     outputs.append(torch.sigmoid(model(x[:, i-3:i, :, :])).to('cpu').numpy())
                     count += 1
                 
                 outputs.append((x_/count).to('cpu').numpy())
-#                 outputs.append(((torch.sigmoid(model(x[:, 3:6, :, :]))+torch.sigmoid(model(x[:, 0:3, :, :]))+torch.sigmoid(model(x[:, 6:9, :, :])))/3).to('cpu').numpy())
-#                 outputs.append((torch.sigmoid(model(x[:, 3:6, :, :])).to('cpu').numpy() >=THR).astype(np.uint8))
-#                 outputs.append((torch.sigmoid(model(x[:, 0:3, :, :])).to('cpu').numpy() >=THR).astype(np.uint8))
-#                 outputs.append((torch.sigmoid(model(x[:, 5:8, :, :])).to('cpu').numpy() >=THR).astype(np.uint8))
-#                 outputs.append((torch.sigmoid(model(x[:, 3:6, :, :]))).cpu().numpy())
             else:
                 count=1
                 x_ = torch.sigmoid(model(x[:, 0:3, :, :]))
-#                 outputs.append(torch.sigmoid(model(x[:, 0:3, :, :])).to('cpu').numpy())
                 for i in range(4, CFG.in_chans):
                     x_ += torch.sigmoid(model(x[:, i-3:i, :, :]))
-#                     outputs.append(torch.sigmoid(model(x[:, i-3:i, :, :])).to('cpu').numpy())
                     count += 1
                 
                 outputs.append((x_/count).to('cpu').numpy())
-#                 outputs.append(torch.sigmoid(model(x)).to('cpu').numpy())
         avg_preds = np.mean(outputs, axis=0)
-#         avg_preds = np.amax(outputs, axis=0)
-#         avg_preds = np.amin(outputs, axis=0)
         return avg_preds
 
     def add_model(self, model):
@@ -384,14 +365,10 @@ def TTA(x:torch.Tensor,model:nn.Module, device):
     shape=x.shape
     rot = [1, 3] # How much to rotate the fragments for TTA
     x=[torch.rot90(x,k=i,dims=(-2,-1)) for i in rot]
-#     x = [x, torch.flip(x, dims=[2]), torch.flip(x, dims=[3])]
     x=torch.cat(x,dim=0)
     x=model(x)
     x = torch.from_numpy(x).to(device)
-    # print(type(x))
     x=x.reshape(len(rot),shape[0],1,*shape[-2:])
-#     x=x.reshape(3,shape[0],1,*shape[-2:])
     x=[torch.rot90(x[count],k=-i,dims=(-2,-1)) for count, i in enumerate(rot)]
     x=torch.stack(x,dim=0)
     return x.mean(0)
-#     return x.max(0).values#[:, 0, :, :]

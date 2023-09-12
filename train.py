@@ -1,41 +1,14 @@
 import numpy as np
-import pandas as pd
-import scipy as sp
-from sklearn.metrics import roc_auc_score, accuracy_score, f1_score, log_loss
 import matplotlib.pyplot as plt
-import sys
-import os
 import gc
 import sys
-import pickle
-import warnings
-import math
 import time
-import random
-import argparse
-import importlib
-from tqdm.auto import tqdm
-from functools import partial
 
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset
-from torch.cuda.amp import autocast, GradScaler
-from torch.optim import Adam, SGD, AdamW
-from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, CosineAnnealingLR, ReduceLROnPlateau
-import segmentation_models_pytorch as smp
-from warmup_scheduler import GradualWarmupScheduler
+from torch.utils.data import DataLoader
+from torch.optim import SGD, AdamW
 import cv2
-
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
-from albumentations import ImageOnlyTransform
-
-import shutil
-from pathlib import Path
-from contextlib import contextmanager
-from collections import defaultdict, Counter
-import datetime
 
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -106,7 +79,6 @@ for fold in CFG.valid_id:
             valid_loader, model, criterion, device, valid_xyxys, valid_mask_gt)
 
         scheduler_step(scheduler, avg_val_loss, epoch)
-#         scheduler.step()
 
         best_dice, best_th = calc_cv(valid_mask_gt, mask_pred, Logger)
 
@@ -117,7 +89,6 @@ for fold in CFG.valid_id:
 
         Logger.info(
             f'Epoch {epoch+1} - avg_train_loss: {avg_loss:.4f}  avg_val_loss: {avg_val_loss:.4f}  time: {elapsed:.0f}s')
-        # Logger.info(f'Epoch {epoch+1} - avgScore: {avg_score:.4f}')
         Logger.info(
             f'Epoch {epoch+1} - avgScore: {score:.4f}')
 

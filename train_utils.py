@@ -237,9 +237,6 @@ FocalLoss = smp.losses.FocalLoss(mode='binary', alpha=0.25, gamma=2.0)
 
 def criterion(y_pred, y_true):
     return 0.375 * BCELoss(y_pred, y_true) + 0.5 * DiceLoss(y_pred, y_true) + 0.125 * FocalLoss(y_pred, y_true)
-#     return DiceLoss(y_pred, y_true)
-    # return 0.5 * BCELoss(y_pred, y_true) + 0.5 * TverskyLoss(y_pred, y_true)
-#     return BCELoss(y_pred, y_true)
 
 def train_fn(train_loader, model, criterion, optimizer, device):
     model.train()
